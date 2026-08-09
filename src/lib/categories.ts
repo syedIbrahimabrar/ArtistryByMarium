@@ -132,7 +132,7 @@ export function useCategories() {
         if (typeof window !== "undefined") {
           localStorage.setItem(SEED_KEY, "true");
         }
-        const { error } = await supabase.from("gallery_categories").delete().ilike("name", trimmed);
+        const { error } = await supabase.from("gallery_categories").delete().eq("name", trimmed);
         if (error) {
           console.warn("Category deletion error:", error);
           return { error: error.message };

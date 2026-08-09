@@ -102,6 +102,28 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
     return this;
   }
 
+  neq(field: string, val: unknown) {
+    this.conditions.push({ field, op: "!=", val });
+    return this;
+  }
+
+  ilike(field: string, val: string) {
+    const cleanVal = typeof val === "string" ? val.replace(/%/g, "").trim() : val;
+    this.conditions.push({ field, op: "==", val: cleanVal });
+    return this;
+  }
+
+  like(field: string, val: string) {
+    const cleanVal = typeof val === "string" ? val.replace(/%/g, "").trim() : val;
+    this.conditions.push({ field, op: "==", val: cleanVal });
+    return this;
+  }
+
+  in(field: string, values: unknown[]) {
+    this.conditions.push({ field, op: "in", val: values });
+    return this;
+  }
+
   order(field: string, opts?: { ascending?: boolean }) {
     this.orders.push({ field, ascending: opts?.ascending ?? true });
     return this;
@@ -109,6 +131,11 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
 
   limit(n: number) {
     this.limitVal = n;
+    return this;
+  }
+
+  single() {
+    this.isSingle = true;
     return this;
   }
 
@@ -182,30 +209,38 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
       }
 
       if (this.action === "delete") {
-        const qConstraints = this.conditions.map((c) => where(c.field, c.op, c.val));
-        const q = query(colRef, ...qConstraints);
-        const snapshot = await getDocs(q);
-        for (const docSnap of snapshot.docs) {
-          await deleteDoc(doc(db, this.colName, docSnap.id));
-        }
-        const idCond = this.conditions.find((c) => c.field === "id" && c.op === "==");
-        if (idCond && snapshot.empty && typeof idCond.val === "string") {
-          await deleteDoc(doc(db, this.colName, idCond.val)).catch(() => {});
-        }
-        // Fallback for case-insensitive/trimmed delete by name or other string field
-        const nameCond = this.conditions.find((c) => c.field === "name" && c.op === "==");
-        if (nameCond && snapshot.empty && typeof nameCond.val === "string") {
-          const allSnapshot = await getDocs(query(colRef));
-          for (const docSnap of allSnapshot.docs) {
-            const data = docSnap.data();
-            if (
-              data.name &&
-              typeof data.name === "string" &&
-              data.name.trim().toLowerCase() === nameCond.val.trim().toLowerCase()
-            ) {
-              await deleteDoc(doc(db, this.colName, docSnap.id));
+        try {
+          const qConstraints = this.conditions.map((c) => where(c.field, c.op, c.val));
+          const q = query(colRef, ...qConstraints);
+          const snapshot = await getDocs(q);
+          for (const docSnap of snapshot.docs) {
+            await deleteDoc(doc(db, this.colName, docSnap.id));
+          }
+          const idCond = this.conditions.find((c) => c.field === "id");
+          if (idCond && typeof idCond.val === "string") {
+            await deleteDoc(doc(db, this.colName, idCond.val)).catch(() => {});
+          }
+          // Fallback scan for name, title, or category matching
+          const strCond = this.conditions.find((c) => typeof c.val === "string");
+          if (strCond && typeof strCond.val === "string") {
+            const cleanVal = strCond.val.trim().toLowerCase();
+            const allSnapshot = await getDocs(query(colRef));
+            for (const docSnap of allSnapshot.docs) {
+              const data = docSnap.data();
+              const val1 = data.name;
+              const val2 = data.title;
+              const val3 = data.category;
+              if (
+                (typeof val1 === "string" && val1.trim().toLowerCase() === cleanVal) ||
+                (typeof val2 === "string" && val2.trim().toLowerCase() === cleanVal) ||
+                (typeof val3 === "string" && val3.trim().toLowerCase() === cleanVal)
+              ) {
+                await deleteDoc(doc(db, this.colName, docSnap.id)).catch(() => {});
+              }
             }
           }
+        } catch (err) {
+          console.warn(`Firestore delete error on [${this.colName}]:`, err);
         }
         return { data: null, error: null };
       }

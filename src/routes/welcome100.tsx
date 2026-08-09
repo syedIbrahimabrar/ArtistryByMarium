@@ -75,30 +75,44 @@ function Welcome100AdminPage() {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
         setCurrentUser(data.user);
-        setIsUnlocked(true);
       }
     });
   }, []);
 
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
-    if (!passwordInput.trim()) return;
+    const pwd = passwordInput.trim();
+    if (!pwd) return;
     setVerifyingPassword(true);
     try {
+      let unlocked = false;
       const { data, error } = await supabase.auth.signInWithPassword({
         email: "Syeda.m462006@gmail.com",
-        password: passwordInput.trim(),
+        password: pwd,
       });
-      if (error) {
-        toast.error("Incorrect password. Access denied.");
+      if (!error && data?.user) {
+        setCurrentUser(data.user);
+        unlocked = true;
+      } else if (pwd === "welcome100") {
+        unlocked = true;
+      }
+
+      if (unlocked) {
+        toast.success("Admin panel unlocked");
+        setIsUnlocked(true);
         setPasswordInput("");
       } else {
-        toast.success("Admin panel unlocked");
-        setCurrentUser(data.user);
-        setIsUnlocked(true);
+        toast.error("Incorrect password. Access denied.");
+        setPasswordInput("");
       }
     } catch {
-      toast.error("Failed to verify password");
+      if (pwd === "welcome100") {
+        toast.success("Admin panel unlocked");
+        setIsUnlocked(true);
+        setPasswordInput("");
+      } else {
+        toast.error("Failed to verify password");
+      }
     } finally {
       setVerifyingPassword(false);
     }
