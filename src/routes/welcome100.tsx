@@ -476,7 +476,7 @@ function RequestsTab() {
 }
 
 function GalleryTab() {
-  const { categories, addCategory, removeCategory } = useCategories();
+  const { categories, addCategory, deleteCategory, removeCategory } = useCategories();
   const [rows, setRows] = useState<GalleryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -600,13 +600,21 @@ function GalleryTab() {
   async function confirmDeleteCategory(cat: string) {
     setDeletingCatBusy(cat);
     try {
-      const { error } = await removeCategory(cat);
-      if (error) {
-        toast.error(error);
+      const fn = deleteCategory || removeCategory;
+      if (!fn) {
+        toast.error("Delete function unavailable");
+        return;
+      }
+      const res = await fn(cat);
+      if (res?.error) {
+        toast.error(res.error);
         return;
       }
       toast.success(`Category "${cat}" deleted`);
       setDeletingCatName(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete category";
+      toast.error(msg);
     } finally {
       setDeletingCatBusy(null);
     }

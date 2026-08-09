@@ -132,9 +132,10 @@ export function useCategories() {
         if (typeof window !== "undefined") {
           localStorage.setItem(SEED_KEY, "true");
         }
-        const { error } = await supabase.from("gallery_categories").delete().eq("name", trimmed);
+        const { error } = await supabase.from("gallery_categories").delete().ilike("name", trimmed);
         if (error) {
           console.warn("Category deletion error:", error);
+          return { error: error.message };
         }
 
         // Optimistically remove from state case-insensitively
@@ -151,5 +152,12 @@ export function useCategories() {
     [load],
   );
 
-  return { categories, loading, addCategory, deleteCategory, refresh: load };
+  return {
+    categories,
+    loading,
+    addCategory,
+    deleteCategory,
+    removeCategory: deleteCategory,
+    refresh: load,
+  };
 }
