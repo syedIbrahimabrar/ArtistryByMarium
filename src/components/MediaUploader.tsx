@@ -11,7 +11,7 @@ import {
   Laptop,
 } from "lucide-react";
 import { toast } from "sonner";
-import { isVideoUrl, formatFileSize } from "@/lib/media";
+import { isVideoUrl, formatFileSize, compressImage } from "@/lib/media";
 import { uploadFile } from "@/lib/storage";
 
 interface MediaUploaderProps {
@@ -51,19 +51,23 @@ export function MediaUploader({
       return;
     }
 
-    // Limit size to 30MB for browser responsiveness
-    if (file.size > 30 * 1024 * 1024) {
-      toast.error("File size is larger than 30MB. Please choose a smaller file or compress it.");
+    // Limit size to 40MB for videos/files
+    if (file.size > 40 * 1024 * 1024) {
+      toast.error("File size is larger than 40MB. Please choose a smaller file.");
       return;
     }
 
     setUploading(true);
-    setFileName(file.name);
-    setFileSize(file.size);
 
     try {
+      // Compress images client-side for fast network transfer & no website lag
+      const targetFile = isImg ? await compressImage(file) : file;
+
+      setFileName(targetFile.name);
+      setFileSize(targetFile.size);
+
       // Best effort upload via storage service
-      const res = await uploadFile("gallery", file, "media/");
+      const res = await uploadFile("gallery", targetFile, "media/");
       if ("error" in res) {
         // Fallback to FileReader Data URL if storage fails or for offline support
         const reader = new FileReader();
@@ -77,18 +81,23 @@ export function MediaUploader({
           toast.error("Failed to read file from device");
           setUploading(false);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(targetFile);
       } else {
         onChange(res.path);
         toast.success(`${isVid ? "Video" : "Image"} uploaded successfully!`);
         setUploading(false);
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.error("Upload error:", err);
+      // Fallback read
       const reader = new FileReader();
       reader.onload = () => {
         onChange(reader.result as string);
         toast.success(`${isVid ? "Video" : "Image"} ready!`);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error("Upload failed");
         setUploading(false);
       };
       reader.readAsDataURL(file);

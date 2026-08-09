@@ -540,9 +540,17 @@ function GalleryTab() {
     if (!title.trim() || !imageUrl.trim()) {
       return toast.error("Please fill in Title and Image URL");
     }
+
+    if (imageUrl.startsWith("data:") && imageUrl.length > 900 * 1024) {
+      toast.error(
+        "Image string is too large. Please upload the file using the device uploader so it compresses automatically.",
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("gallery_items").insert({
+      const insertPromise = supabase.from("gallery_items").insert({
         title: title.trim(),
         category: category || categories[0] || "Calligraphy",
         price: price.trim() || null,
@@ -550,7 +558,18 @@ function GalleryTab() {
         featured,
         status: "available",
       });
-      if (error) return toast.error(error.message);
+
+      // Timeout after 12s so UI never freezes indefinitely
+      const timeoutPromise = new Promise<{ error: { message: string } }>((resolve) =>
+        setTimeout(
+          () => resolve({ error: { message: "Request timed out. Please try uploading again." } }),
+          12000,
+        ),
+      );
+
+      const res = await Promise.race([insertPromise, timeoutPromise]);
+      if (res.error) return toast.error(res.error.message);
+
       toast.success("Artwork added to gallery");
       setTitle("");
       setPrice("");

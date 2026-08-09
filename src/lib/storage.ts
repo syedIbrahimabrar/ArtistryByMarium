@@ -1,19 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/** Returns a long-lived signed URL for a private storage object, or null on error. */
+/** Returns a long-lived signed URL for a private storage object, or the path if already a URL. */
 export async function signedUrl(
   bucket: string,
   path: string,
   expiresIn = 60 * 60 * 24 * 7, // 1 week
 ): Promise<string | null> {
   if (!path) return null;
+  const trimmed = path.trim();
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
   try {
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
-    if (error || !data) return null;
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(trimmed, expiresIn);
+    if (error || !data) return trimmed; // Fallback to path in case public URL or fallback
     return data.signedUrl;
   } catch (err) {
     console.error("Signed URL error:", err);
-    return null;
+    return trimmed;
   }
 }
 
