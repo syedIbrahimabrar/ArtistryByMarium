@@ -137,8 +137,14 @@ function Home() {
       <SiteNav />
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="container-art grid lg:grid-cols-2 gap-10 lg:gap-16 items-center pt-10 pb-20 lg:pt-20 lg:pb-32">
+      <section
+        className="relative overflow-hidden bg-cover bg-center min-h-[80vh] flex items-center py-16 lg:py-28"
+        style={{ backgroundImage: `url(${heroImg})` }}
+      >
+        {/* Soft gradient overlay so text remains crisp while image shows on the background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--cream)] via-[color:var(--cream)]/85 sm:via-[color:var(--cream)]/75 to-[color:var(--cream)]/30 sm:to-transparent" />
+
+        <div className="container-art relative z-10 w-full max-w-3xl">
           <div className="animate-fade-up">
             <span className="eyebrow">
               <span className="gold-divider" /> handmade with love
@@ -172,27 +178,6 @@ function Home() {
                   <div className="text-xs uppercase tracking-widest text-muted-foreground">{l}</div>
                 </div>
               ))}
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-[color:var(--gold)]/15 to-[color:var(--bloom)]/15 blur-2xl" />
-            <div className="relative rounded-[1.5rem] overflow-hidden ring-1 ring-[color:var(--gold)]/40 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)]">
-              <img
-                src={heroImg}
-                alt="Handmade art flat lay"
-                width={1600}
-                height={1200}
-                className="w-full h-auto"
-              />
-            </div>
-            <div className="absolute -bottom-6 -left-6 hidden md:flex items-center gap-3 bg-card rounded-full pl-2 pr-5 py-2 shadow-lg border border-border">
-              <div className="h-10 w-10 rounded-full bg-[color:var(--gold)]/20 grid place-items-center">
-                <Sparkles className="h-5 w-5 text-[color:var(--gold)]" />
-              </div>
-              <div className="text-sm">
-                <div className="font-medium text-primary">One-of-a-kind</div>
-                <div className="text-xs text-muted-foreground">made just for you</div>
-              </div>
             </div>
           </div>
         </div>
