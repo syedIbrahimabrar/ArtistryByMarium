@@ -7,6 +7,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadFile } from "@/lib/storage";
+import { sendEmailNotification } from "@/lib/notifications";
 
 export const Route = createFileRoute("/request")({
   head: () => ({
@@ -103,6 +104,19 @@ function RequestPage() {
         setSubmitting(false);
         return;
       }
+
+      // Send email notification to Syeda.m462006@gmail.com
+      sendEmailNotification({
+        type: "artwork_request",
+        name: parsed.data.name,
+        phone: parsed.data.phone,
+        whatsapp: parsed.data.whatsapp || undefined,
+        email: parsed.data.email,
+        size: parsed.data.size || undefined,
+        instructions: parsed.data.instructions || undefined,
+        imageUrl: imagePath,
+      }).catch((e) => console.warn("Email notification error:", e));
+
       setDone(true);
       toast.success("Request received — we'll be in touch shortly!");
     } catch (err: unknown) {

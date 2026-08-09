@@ -75,6 +75,18 @@ function setStoredUser(user: User | null) {
   }
 }
 
+async function withRetry<R>(fn: () => Promise<R>, retries = 2, delayMs = 500): Promise<R> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    if (retries > 0) {
+      await new Promise((res) => setTimeout(res, delayMs));
+      return withRetry(fn, retries - 1, delayMs * 2);
+    }
+    throw err;
+  }
+}
+
 class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
   private colName: string;
   private conditions: Condition[] = [];
@@ -194,12 +206,12 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
       if (this.action === "update") {
         const qConstraints = this.conditions.map((c) => where(c.field, c.op, c.val));
         const q = query(colRef, ...qConstraints);
-        const snapshot = await getDocs(q);
+        const snapshot = await withRetry(() => getDocs(q));
         const updateData = (
           this.payload && typeof this.payload === "object" ? this.payload : {}
         ) as Record<string, unknown>;
         for (const docSnap of snapshot.docs) {
-          await updateDoc(doc(db, this.colName, docSnap.id), updateData);
+          await withRetry(() => updateDoc(doc(db, this.colName, docSnap.id), updateData));
         }
         const idCond = this.conditions.find((c) => c.field === "id" && c.op === "==");
         if (idCond && snapshot.empty && typeof idCond.val === "string") {
@@ -212,7 +224,7 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
         try {
           const qConstraints = this.conditions.map((c) => where(c.field, c.op, c.val));
           const q = query(colRef, ...qConstraints);
-          const snapshot = await getDocs(q);
+          const snapshot = await withRetry(() => getDocs(q));
           for (const docSnap of snapshot.docs) {
             await deleteDoc(doc(db, this.colName, docSnap.id));
           }
@@ -224,7 +236,7 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
           const strCond = this.conditions.find((c) => typeof c.val === "string");
           if (strCond && typeof strCond.val === "string") {
             const cleanVal = strCond.val.trim().toLowerCase();
-            const allSnapshot = await getDocs(query(colRef));
+            const allSnapshot = await withRetry(() => getDocs(query(colRef)));
             for (const docSnap of allSnapshot.docs) {
               const data = docSnap.data();
               const val1 = data.name;
@@ -255,7 +267,7 @@ class QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> {
       }
 
       const q = query(colRef, ...qConstraints);
-      const snapshot = await getDocs(q);
+      const snapshot = await withRetry(() => getDocs(q));
 
       const results: Array<Record<string, unknown>> = snapshot.docs.map((d) => ({
         id: d.id,

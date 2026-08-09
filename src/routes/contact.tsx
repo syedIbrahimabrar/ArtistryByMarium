@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter, EMAIL, PHONE, WA_DIGITS, INSTAGRAM, FACEBOOK } from "@/components/SiteFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmailNotification } from "@/lib/notifications";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -54,6 +55,15 @@ function ContactPage() {
         toast.error("Could not send: " + error.message);
         return;
       }
+
+      // Send email notification to Syeda.m462006@gmail.com
+      sendEmailNotification({
+        type: "contact_message",
+        name: parsed.data.name,
+        email: parsed.data.email,
+        message: parsed.data.message,
+      }).catch((e) => console.warn("Email notification error:", e));
+
       toast.success("Message sent — we'll be in touch soon!");
       (e.target as HTMLFormElement).reset();
     } catch (err: unknown) {
