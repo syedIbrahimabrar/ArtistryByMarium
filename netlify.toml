@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Nitro (this project's server engine) auto-detects it's running in a
+# Netlify build and outputs the right serverless function bundle to
+# .netlify/functions-internal automatically — no extra plugin needed.

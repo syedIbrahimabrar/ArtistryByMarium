@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "gallery_categories": {
+      "title": "Gallery Categories",
+      "description": "Categories for filtering gallery items",
+      "properties": {
+        "name": { "type": "string" },
+        "sort_order": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "gallery_items": {
+      "title": "Gallery Items",
+      "description": "Artwork and craft gallery items",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "image_url": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["title", "category", "image_url"]
+    },
+    "artwork_requests": {
+      "title": "Artwork Requests",
+      "description": "Custom commission requests from users",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "artwork_type": { "type": "string" },
+        "instructions": { "type": "string" },
+        "image_url": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["name", "email", "artwork_type"]
+    },
+    "contact_messages": {
+      "title": "Contact Messages",
+      "description": "Messages from contact form",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "is_read": { "type": "boolean" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["name", "email", "message"]
+    }
+  }
+}
